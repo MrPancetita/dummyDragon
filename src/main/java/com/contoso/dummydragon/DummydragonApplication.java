@@ -1,13 +1,31 @@
 package com.contoso.dummydragon;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 
 @SpringBootApplication
+@RestController
 public class DummydragonApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(DummydragonApplication.class, args);
+	}
+	@GetMapping("/hello")
+	public String hello(@RequestParam(value = "name", defaultValue = "World") String name) {
+		return String.format("Hello %s!", name);
+	}
+
+	@GetMapping("/prime")
+	public String prime(@RequestParam(value = "number", defaultValue = "0") int number) {
+		if (Utils.isPrime(number)) {
+			return String.format("%s is prime", String.valueOf(number));
+		} else {
+			return String.format("%s is not prime", String.valueOf(number));
+		}
+
 	}
 
 }
