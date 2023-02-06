@@ -1,7 +1,9 @@
 pipeline {
     agent any
-
-      stages {
+    tools {
+        jdk 'jdk-17.0.6+10'
+    }
+    stages {
         stage('Checkout') {
             steps {
                 // Get some code from a GitHub repository
@@ -10,46 +12,53 @@ pipeline {
         }
         stage('Build') {
             steps {
+                sh 'chmod 744 ./mvnw'
                 sh './mvnw clean package'
             }
             post {
                 always {
-                    sh 'echo always'
+                    sh 'echo DUMMY: Desplegando a staging...'
+                }
+                success {
+                    sh 'echo creando peticion de cambio'
+                    jiraSendDeploymentInfo (
+                            environmentId: 'es-prod-1',
+                            environmentName: 'es-prod-1',
+                            environmentType: 'production',
+                            serviceIds: [
+                                    'b:YXJpOmNsb3VkOmdyYXBoOjpzZXJ2aWNlL2Y3ZmE1NDJhLTgwYWEtNDA3Zi1iMTY1LTU1ZDBiOTdjNTA1NS8yNTg4MTUxZS1hNjBjLTExZWQtYTk1Yi0xMjhiNDI4MTk0MjQ='
+                            ],
+                            site: 'serconlo.atlassian.net',
+                            state: 'pending'
+                    )
                 }
             }
         }
-
-                /**
-                jiraSendDeploymentInfo (
-                environmentId: 'us-prod-1',
-                environmentName: 'us-prod-1',
-                environmentType: 'staging',
-                serviceIds: [
-                    'b:YXJpOmNsb3VkOmdyYXBoOjpzZXJ2aWNlL2Y3ZmE1NDJhLTgwYWEtNDA3Zi1iMTY1LTU1ZDBiOTdjNTA1NS8yNTg4MTUxZS1hNjBjLTExZWQtYTk1Yi0xMjhiNDI4MTk0MjQ='
-                ],
-                site: 'serconlo.atlassian.net',
-                state: 'in_progress'
-                )
-                **/
-                echo (jiraSearch 'dummyDragon-pipe').count
-
-
-                // Run Maven on a Unix agent.
-                //sh "mvn -Dmaven.test.failure.ignore=true clean package"
-
-                // To run Maven on a Windows agent, use
-                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
+        stage('Despliegue Prod') {
+            steps {
+                input message: 'Please confirm the status of the change associated to this build number ', ok: 'Approved'
             }
-
             post {
-                // If Maven was able to run the tests, even if some of the test
-                // failed, record the test results and archive the jar file.
                 success {
-                    sh 'echo success'
-                    //junit '**/target/surefire-reports/TEST-*.xml'
-                    //archiveArtifacts 'target/*.jar'
+                    sh 'echo DUMMY: Desplegando en produccion...'
+                    jiraSendDeploymentInfo (
+                            environmentId: 'es-prod-1',
+                            environmentName: 'es-prod-1',
+                            environmentType: 'production',
+                            serviceIds: [
+                                    'b:YXJpOmNsb3VkOmdyYXBoOjpzZXJ2aWNlL2Y3ZmE1NDJhLTgwYWEtNDA3Zi1iMTY1LTU1ZDBiOTdjNTA1NS8yNTg4MTUxZS1hNjBjLTExZWQtYTk1Yi0xMjhiNDI4MTk0MjQ='
+                            ],
+                            site: 'serconlo.atlassian.net',
+                            state: 'success'
+                    )
                 }
             }
+        }
+    }
+    post {
+        always {
+            junit '**/target/surefire-reports/TEST-*.xml'
+            archiveArtifacts 'target/*.war'
         }
     }
 }
@@ -138,25 +147,3 @@ pipeline {
         }
 }
 **/
-
-pipeline {
-    agent any
-    triggers { pollSCM('* * * * *') }
-    stages {
-        // implicit checkout stage
-
-        stage('Build') {
-            steps {
-                sh './mvnw clean package'
-            }
-        }
-    }
-    // post after stages, for entire pipeline, is also an implicit step albeit with explicit config here, unlike implicit checkout stage
-    post {
-        always {
-            junit '**/target/surefire-reports/TEST-*.xml'
-            archiveArtifacts 'target/*.jar'
-        }
-    }
-}
-Footer
